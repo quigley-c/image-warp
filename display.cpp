@@ -10,16 +10,16 @@ int WIDTH_IMG;
 int HEIGHT_IMG;
 int header = 54;
 
-double** deformable;
+double** tex_coords;
 std::vector<unsigned char> data;
 
 auto fp_flower = "./materials/flower.bmp";
 char* img_buf;
 
 void setup() {
-	deformable = (double**) malloc(sizeof(double) * 2); // two points, making a rect
+	tex_coords = (double**) malloc(sizeof(double) * 2); // two points, making a rect
 	for(int i = 0; i < 2; i++)
-		deformable[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
+		tex_coords[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
 
 	load_bmp(fp_flower);
 	img_buf = (char*)malloc(sizeof(char)*data.size());
@@ -33,19 +33,24 @@ void display() {
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
 	// draw stuff
-	deformable[0][0] = -0.99999;
-	deformable[0][1] = -0.99999;
-	deformable[1][0] = 1;
-	deformable[1][1] = 1;
+	tex_coords[0][0] = -0.99999;
+	tex_coords[0][1] = -0.99999;
+	tex_coords[1][0] = 1;
+	tex_coords[1][1] = 1;
 
-	double** d = deformable;
+	double** d = tex_coords;
 	draw_rect(d[0][0], d[0][1], d[1][0], d[1][1]);
+
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH_IMG, HEIGHT_IMG, 0, GL_RGB, GL_UNSIGNED_BYTE, &texture);
 
 	int imgx = 100;
 	int imgy = 100;
 	glBegin(GL_POINTS);
 		glRasterPos2i(imgx, imgy);
-		glDrawPixels(WIDTH_IMG, HEIGHT_IMG, GL_RGB, GL_UNSIGNED_BYTE, img_buf);
+		glDrawPixels(WIDTH_IMG, HEIGHT_IMG, GL_RGB, GL_UNSIGNED_BYTE, &texture);
 	glEnd();
 
 	glutSwapBuffers();
@@ -133,7 +138,7 @@ void deform_img(double** img, int i_buf) {
 	// change the position of the rect coord, let the mapping handle the rest
 	img[i_buf][0] = mouse_x;
 	img[i_buf][1] = mouse_y;
-	map_to_rect(img, deformable);
+	map_to_rect(img, tex_coords);
 }
 
 void load_model(char* fp) {}
@@ -145,6 +150,6 @@ void rotate_model(int* model, int dimension, int deg) {
 }
 
 void free_mem() {
-	free(deformable);
+	free(tex_coords);
 }
 
