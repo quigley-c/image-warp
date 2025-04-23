@@ -3,6 +3,7 @@
 #include<GL/glut.h>
 #include<vector>
 #include<assert.h>
+#include<cstring>
 
 double mouse_x;
 double mouse_y;
@@ -12,12 +13,13 @@ int header = 54;
 
 double** tex_coords;
 std::vector<unsigned char> data;
+GLuint tex;
 
 auto fp_flower = "./materials/flower.bmp";
 char* img_buf;
 
 void setup() {
-	tex_coords = (double**) malloc(sizeof(double) * 2); // two points, making a rect
+	tex_coords = (double**) malloc(sizeof(double*) * 2); // two points, making a rect
 	for(int i = 0; i < 2; i++)
 		tex_coords[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
 
@@ -26,6 +28,15 @@ void setup() {
 	for(int i = 0; i < data.size(); i++) {
 		img_buf[i] = data[i];
 	}
+
+	//texturing
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH_IMG, HEIGHT_IMG, 0, GL_RGB, GL_UNSIGNED_BYTE, img_buf);
+	glEnable(GL_TEXTURE_2D);
 };
 
 void display() {
@@ -33,24 +44,20 @@ void display() {
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
 	// draw stuff
-	tex_coords[0][0] = -0.99999;
-	tex_coords[0][1] = -0.99999;
-	tex_coords[1][0] = 1;
-	tex_coords[1][1] = 1;
+	tex_coords[0][0] = -0.25;
+	tex_coords[0][1] = -0.25;
+	tex_coords[1][0] = 0.25;
+	tex_coords[1][1] = 0.25;
 
 	double** d = tex_coords;
 	draw_rect(d[0][0], d[0][1], d[1][0], d[1][1]);
 
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH_IMG, HEIGHT_IMG, 0, GL_RGB, GL_UNSIGNED_BYTE, &texture);
-
-	int imgx = 100;
-	int imgy = 100;
-	glBegin(GL_POINTS);
-		glRasterPos2i(imgx, imgy);
-		glDrawPixels(WIDTH_IMG, HEIGHT_IMG, GL_RGB, GL_UNSIGNED_BYTE, &texture);
+	// display image
+	glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(d[0][0], d[0][1]);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f(d[1][0], d[0][1]);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f(d[1][0], d[1][1]);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(d[0][1], d[1][1]);
 	glEnd();
 
 	glutSwapBuffers();
@@ -152,4 +159,3 @@ void rotate_model(int* model, int dimension, int deg) {
 void free_mem() {
 	free(tex_coords);
 }
-
