@@ -9,25 +9,26 @@ double mouse_x;
 double mouse_y;
 int WIDTH_IMG;
 int HEIGHT_IMG;
-int header = 54;
 
-double** tex_coords;
 std::vector<unsigned char> data;
+double** image_pos;
+double** deformable_pos;
 GLuint tex;
 
-auto fp_flower = "./materials/flower.bmp";
-char* img_buf;
+auto fp = "./materials/sam.bmp";
+unsigned char* img_buf;
 
 void setup() {
-	tex_coords = (double**) malloc(sizeof(double*) * 2); // two points, making a rect
+	image_pos = (double**) malloc(sizeof(double*) * 2); // two points, making a rect
+	deformable_pos = (double**) malloc(sizeof(double*) * 2); // two points, making a rect
 	for(int i = 0; i < 2; i++)
-		tex_coords[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
+		image_pos[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
+	for(int i = 0; i < 2; i++)
+		deformable_pos[i] = (double*) malloc(sizeof(double) * 2); //one point, two doubles
 
-	load_bmp(fp_flower);
-	img_buf = (char*)malloc(sizeof(char)*data.size());
-	for(int i = 0; i < data.size(); i++) {
-		img_buf[i] = data[i];
-	}
+	load_bmp(fp);
+	img_buf = (unsigned char*)malloc(sizeof(unsigned char)*data.size());
+    img_buf = data.data();
 
 	//texturing
 	glGenTextures(1, &tex);
@@ -44,20 +45,25 @@ void display() {
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
 	// draw stuff
-	tex_coords[0][0] = -0.25;
-	tex_coords[0][1] = -0.25;
-	tex_coords[1][0] = 0.25;
-	tex_coords[1][1] = 0.25;
+	image_pos[0][0] = -0.5;
+	image_pos[0][1] = 0.25;
+	image_pos[1][0] = 0.5;
+	image_pos[1][1] = 0.95;
 
-	double** d = tex_coords;
-	draw_rect(d[0][0], d[0][1], d[1][0], d[1][1]);
+    deformable_pos[0][0] = -0.5;
+	deformable_pos[0][1] = -0.75;
+	deformable_pos[1][0] = 0.5;
+	deformable_pos[1][1] = 0.05;
+
+	draw_rect(deformable_pos[0][0], deformable_pos[0][1],
+            deformable_pos[1][0], deformable_pos[1][1]);
 
 	// display image
 	glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 0.0f); glVertex2f(d[0][0], d[0][1]);
-		glTexCoord2f(1.0f, 0.0f); glVertex2f(d[1][0], d[0][1]);
-		glTexCoord2f(1.0f, 1.0f); glVertex2f(d[1][0], d[1][1]);
-		glTexCoord2f(0.0f, 1.0f); glVertex2f(d[0][1], d[1][1]);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(image_pos[0][0], image_pos[0][1]);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f(image_pos[1][0], image_pos[0][1]);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f(image_pos[1][0], image_pos[1][1]);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(image_pos[0][0], image_pos[1][1]);
 	glEnd();
 
 	glutSwapBuffers();
@@ -94,6 +100,7 @@ void draw_rect(double x0, double y0, double x1, double y1) {
 }
 
 void load_bmp(const char* fp) {
+    int header = 54;
 	// from sample code
     FILE* fd;
     if((fd=fopen(fp,"rb")) == NULL){
@@ -115,7 +122,6 @@ void load_bmp(const char* fp) {
     fclose(fd);
 
     //restore pixel from BGR to RGB.
-    //
     for (int i = 0; i < size; i += 3){
         unsigned char temp=pixel[i];
         pixel[i] = pixel[i+2];
@@ -141,11 +147,11 @@ void rotate_img(double* img, int deg) {
     //matrix transform
 }
 
-void deform_img(double** img, int i_buf) {
+void map_img(double** img, int i_buf) {
 	// change the position of the rect coord, let the mapping handle the rest
 	img[i_buf][0] = mouse_x;
 	img[i_buf][1] = mouse_y;
-	map_to_rect(img, tex_coords);
+	map_to_rect(img, image_pos);
 }
 
 void load_model(char* fp) {}
@@ -157,5 +163,5 @@ void rotate_model(int* model, int dimension, int deg) {
 }
 
 void free_mem() {
-	free(tex_coords);
+	free(image_pos);
 }
