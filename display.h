@@ -16,3 +16,6 @@ void deform_img(double*, int);
 void deform_model();
 void free_mem();
 void flip_image_vertical(char*, int, int, int);
+void set_pixel(double, double, double);
+void draw_circle(double, double, double);
+void mouse_motion(int, int);

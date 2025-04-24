@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
 	//register mouse callback
 	glutMouseFunc(on_mouse_button);
 	glutPassiveMotionFunc(mouse_func);
+	glutMotionFunc(mouse_motion);
 
 	glutMainLoop();
 
