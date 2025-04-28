@@ -24,7 +24,8 @@ int clickable_is_mouse = 0;
 int clickable_radius = 10;
 double deform_offset_x = 0;
 double deform_offset_y = 0;
-auto fp = "./materials/flower.bmp";
+double rotation = 0;
+auto fp = "./materials/sam.bmp";
 
 void setup() {
 	image_pos = (double**) malloc(sizeof(double*) * 2); // two points, making a rect
@@ -56,9 +57,27 @@ void display() {
 	image_pos[0][1] = 0.25;
 	image_pos[1][0] = 0.5;
 	image_pos[1][1] = 0.95;
+    rotate(image_pos);
+    draw_image(image_pos[0][0], image_pos[0][1], image_pos[1][0], image_pos[1][1]);
 
-	double mid_x = image_pos[0][0] + ((image_pos[1][0] - image_pos[0][0])/2);
-	double mid_y = image_pos[0][1] + ((image_pos[1][1] - image_pos[0][1])/2);
+	//display user interface
+    deformable_pos[0][0] = -0.5;
+	deformable_pos[0][1] = -0.75;
+	deformable_pos[1][0] = 0.5;
+	deformable_pos[1][1] = 0.05;
+    rotate(deformable_pos);
+    draw_deform_interactable(deformable_pos[0][0], deformable_pos[0][1],
+            deformable_pos[1][0], deformable_pos[1][1]);
+
+	glutSwapBuffers();
+	glutPostRedisplay();
+}
+
+void rotate(double* box) {}
+
+void draw_image(double x1, double y1, double x2, double y2) {
+	double mid_x = x1 + ((x2 - x1)/2);
+	double mid_y = y1 + ((y2 - y1)/2);
 
 	double deformed_x = mid_x + deform_offset_x;
 	double deformed_y = mid_y + deform_offset_y;
@@ -66,44 +85,40 @@ void display() {
 	glEnable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
 		//bottom-left, bottom-right, top-right, top-left
-		glTexCoord2f(0.0f, 0.0f); glVertex2f(image_pos[0][0], image_pos[0][1]);
-		glTexCoord2f(0.5f, 0.0f); glVertex2f(mid_x, image_pos[0][1]);
+		glTexCoord2f(0.5f, 0.0f); glVertex2f(mid_x, y1);
 		glTexCoord2f(0.5f, 0.5f); glVertex2f(deformed_x, deformed_y);
-		glTexCoord2f(0.0f, 0.5f); glVertex2f(image_pos[0][0], mid_y);
+		glTexCoord2f(0.0f, 0.5f); glVertex2f(x1, mid_y);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(x1, y1);
 
+		glTexCoord2f(0.5f, 0.0f); glVertex2f(mid_x, y1);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f(x2, y1);
+		glTexCoord2f(1.0f, 0.5f); glVertex2f(x2, mid_y);
 		glTexCoord2f(0.5f, 0.5f); glVertex2f(deformed_x, deformed_y);
-		glTexCoord2f(0.5f, 0.0f); glVertex2f(mid_x, image_pos[0][1]);
-		glTexCoord2f(1.0f, 0.0f); glVertex2f(image_pos[1][0], image_pos[0][1]);
-		glTexCoord2f(1.0f, 0.5f); glVertex2f(image_pos[1][0], mid_y);
 
-		glTexCoord2f(1.0f, 1.0f); glVertex2f(image_pos[1][0], image_pos[1][1]);
-		glTexCoord2f(0.5f, 1.0f); glVertex2f(mid_x, image_pos[1][1]);
+		glTexCoord2f(0.5f, 1.0f); glVertex2f(mid_x, y2);
 		glTexCoord2f(0.5f, 0.5f); glVertex2f(deformed_x, deformed_y);
-		glTexCoord2f(1.0f, 0.5f); glVertex2f(image_pos[1][0], mid_y);
+		glTexCoord2f(1.0f, 0.5f); glVertex2f(x2, mid_y);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f(x2, y2);
 
-		glTexCoord2f(0.0f, 1.0f); glVertex2f(image_pos[0][0], image_pos[1][1]);
-		glTexCoord2f(0.0f, 0.5f); glVertex2f(image_pos[0][0], mid_y);
+		glTexCoord2f(0.0f, 0.5f); glVertex2f(x1, mid_y);
 		glTexCoord2f(0.5f, 0.5f); glVertex2f(deformed_x, deformed_y);
-		glTexCoord2f(0.5f, 1.0f); glVertex2f(mid_x, image_pos[1][1]);
+		glTexCoord2f(0.5f, 1.0f); glVertex2f(mid_x, y2);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(x1, y2);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
+}
 
-	//display user interface
-    deformable_pos[0][0] = -0.5;
-	deformable_pos[0][1] = -0.75;
-	deformable_pos[1][0] = 0.5;
-	deformable_pos[1][1] = 0.05;
-
-	double dmid_x = deformable_pos[0][0] + ((deformable_pos[1][0] - deformable_pos[0][0])/2);
-	double dmid_y = deformable_pos[0][1] + ((deformable_pos[1][1] - deformable_pos[0][1])/2);
+void draw_deform_interactable(double x1, double y1, double x2, double y2) {
+	double dmid_x = x1 + ((x2 - x1)/2);
+	double dmid_y = y1 + ((y2 - y1)/2);
 
 	double ddeformed_x = dmid_x;
 	double ddeformed_y = dmid_y;
 
-	double left_edge = (sw/2) + ((sw/2) * deformable_pos[0][0]);
-	double right_edge = (sw/2) + ((sw/2) * deformable_pos[1][0]);
-	double top_edge = (sh/2) + ((sh/2) * deformable_pos[1][1]);
-	double bottom_edge = (sh/2) + ((sh/2) * deformable_pos[0][1]);
+	double left_edge = (sw/2) + ((sw/2) * x1);
+	double right_edge = (sw/2) + ((sw/2) * x2);
+	double top_edge = (sh/2) + ((sh/2) * y2);
+	double bottom_edge = (sh/2) + ((sh/2) * y1);
 	if(clickable_is_mouse == 1 &&
 			mouse_x > left_edge && mouse_x < right_edge &&
 			mouse_y > bottom_edge && mouse_y < top_edge
@@ -121,26 +136,23 @@ void display() {
 	deform_offset_x = -(dmid_x - ddeformed_x);
 	deform_offset_y = -(dmid_y - ddeformed_y);
 
-	draw_rect(deformable_pos[0][0], deformable_pos[0][1],
-            deformable_pos[1][0], deformable_pos[1][1]);
+	draw_rect(x1, y1,
+            x2, y2);
 	glBegin(GL_LINES);
 		glColor3f(0,0,1);
-		glVertex2f(deformable_pos[0][0], dmid_y); glVertex2f(dmid_x, dmid_y);
-		glVertex2f(dmid_x, deformable_pos[1][1]); glVertex2f(dmid_x, dmid_y);
-		glVertex2f(deformable_pos[1][0], dmid_y); glVertex2f(dmid_x, dmid_y);
-		glVertex2f(dmid_x, deformable_pos[0][1]); glVertex2f(dmid_x, dmid_y);
+		glVertex2f(x1, dmid_y); glVertex2f(dmid_x, dmid_y);
+		glVertex2f(dmid_x, y2); glVertex2f(dmid_x, dmid_y);
+		glVertex2f(x2, dmid_y); glVertex2f(dmid_x, dmid_y);
+		glVertex2f(dmid_x, y1); glVertex2f(dmid_x, dmid_y);
 
 		glColor3f(1,0,0);
-		glVertex2f(deformable_pos[0][0], dmid_y); glVertex2f(ddeformed_x, ddeformed_y);
-		glVertex2f(dmid_x, deformable_pos[1][1]); glVertex2f(ddeformed_x, ddeformed_y);
-		glVertex2f(deformable_pos[1][0], dmid_y); glVertex2f(ddeformed_x, ddeformed_y);
-		glVertex2f(dmid_x, deformable_pos[0][1]); glVertex2f(ddeformed_x, ddeformed_y);
+		glVertex2f(x1, dmid_y); glVertex2f(ddeformed_x, ddeformed_y);
+		glVertex2f(dmid_x, y2); glVertex2f(ddeformed_x, ddeformed_y);
+		glVertex2f(x2, dmid_y); glVertex2f(ddeformed_x, ddeformed_y);
+		glVertex2f(dmid_x, y1); glVertex2f(ddeformed_x, ddeformed_y);
 	glEnd();
 
 	draw_circle(clickable_x, clickable_y, clickable_radius);
-
-	glutSwapBuffers();
-	glutPostRedisplay();
 }
 
 void reshape(int w, int h) {

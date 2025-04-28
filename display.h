@@ -19,3 +19,6 @@ void flip_image_vertical(char*, int, int, int);
 void set_pixel(double, double, double);
 void draw_circle(double, double, double);
 void mouse_motion(int, int);
+void draw_deform_interactable(double, double, double, double);
+void draw_image(double, double, double, double);
+void rotate(double*);
