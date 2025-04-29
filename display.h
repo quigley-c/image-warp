@@ -1,11 +1,11 @@
 #pragma once
 
-void setup();
+void setup(char*);
 void display();
 void reshape(int, int);
 void mouse_func(int, int);
 void on_mouse_button(int, int, int, int);
-void draw_rect(double, double, double, double);
+void draw_rect(double, double, double, double, double, double, double, double);
 void load_bmp(const char*);
 void load_model(char*);
 void map_to_rect(double*, double*);
@@ -19,6 +19,7 @@ void flip_image_vertical(char*, int, int, int);
 void set_pixel(double, double, double);
 void draw_circle(double, double, double);
 void mouse_motion(int, int);
-void draw_deform_interactable(double, double, double, double);
-void draw_image(double, double, double, double);
-void rotate(double*);
+void draw_deform_interactable();
+void draw_image();
+void rotate(double, double, double, double**, double**, int);
+int point_in_quad(double, double, double**);
