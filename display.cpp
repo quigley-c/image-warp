@@ -5,8 +5,28 @@
 #include<assert.h>
 #include<cstring>
 #include<cmath>
+#include<fstream>
+#include<sstream>
+#include<vector>
+#include<string>
+
+struct Vec3 {
+	float x, y, z;
+};
+
+struct Face {
+	int v1, v2, v3;
+};
+
+struct Obj {
+	std::vector<Vec3> verts;
+	std::vector<Face> faces;
+};
+
+int mode = 0; // for switching between image and model view
 
 GLuint tex;
+Obj obj;
 int WIDTH_IMG;
 int HEIGHT_IMG;
 int sw;
@@ -35,8 +55,14 @@ double deform_offset_x = 0;
 double deform_offset_y = 0;
 double rot_angle = 0;
 char* fp;
+double model_rot = 5.0;
 
 void setup(char* fp_str) {
+	glutCreateMenu(on_menu_button);
+	glutAddMenuEntry("Image Deform", 1);
+	glutAddMenuEntry("Model Viewer", 2);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+
 	fp = fp_str;
 	image_size = 4;
 	deformable_size = 4;
@@ -94,19 +120,44 @@ void setup(char* fp_str) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH_IMG, HEIGHT_IMG, 0, GL_RGB, GL_UNSIGNED_BYTE, img_buf);
-	glEnable(GL_TEXTURE_2D);
+
+	load_obj("materials/teapot.obj");
 };
+
+void on_menu_button(int button) {
+	if (button == 1) {
+		mode = 0;
+	}
+	else if (button == 2) {
+		mode = 1;
+	}
+	glutPostRedisplay();
+}
 
 void display() {
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 
-	// display image
-    draw_image();
+	if (mode == 0) {
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluOrtho2D(-1, 1, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
-	//display user interface
-    draw_deform_interactable();
+		draw_image();
+		draw_deform_interactable();
+		draw_rotation_ui();
+	}
+	if (mode == 1) {
+		//draw teapot
+		render_obj();
+	}
 
-	// display rotation ui
+	glutSwapBuffers();
+	glutPostRedisplay();
+}
+
+void draw_rotation_ui() {
 	double mid_x = deformable_pos[0][0] + (deformable_pos[1][0] - deformable_pos[0][0]) / 2;
 	double mid_y = deformable_pos[0][1] + (deformable_pos[2][1] - deformable_pos[0][1]) / 2;
 	double coord_mid_x = (sw/2) + (mid_x * (sw/2));
@@ -125,7 +176,6 @@ void display() {
 		//rotate
 		double newx = (rot_click_drawable_x * cos(rot_angle)) - (rot_click_drawable_y * sin(rot_angle));
 		double newy = (rot_click_drawable_x * sin(rot_angle)) + (rot_click_drawable_y * cos(rot_angle));
-
 		//translate back
 		rot_click_drawable_x = newx + coord_mid_x;
 		rot_click_drawable_y = newy + coord_mid_y;
@@ -143,9 +193,6 @@ void display() {
 	draw_circle(rot_click_drawable_x, rot_click_drawable_y, clickable_radius);
 
 	free(drawable);
-
-	glutSwapBuffers();
-	glutPostRedisplay();
 }
 
 void rotate(double x, double y, double angle, double** points, double** result_arr, int size) {
@@ -382,19 +429,65 @@ void load_bmp(const char* fp) {
     // return data;
 }
 
-void map_to_rect(double** img, double** rect) {
-	int len = sizeof(img) / sizeof(double*);
-	for(int i = 0; i < len; i++) {
-		img[i] = rect[i];
+void load_obj(const char* fp) {
+	std::ifstream file(fp);
+	if(!file) {
+		printf("Failed to open file: %s\n", fp);
+		return;
 	}
+
+	std::string line;
+	while(std::getline(file, line)) {
+		std::istringstream iss(line); // i learned what istringstream is today
+		std::string t;
+		iss >> t;
+		if (t == "v") {
+			Vec3 v;
+			iss >> v.x >> v.y >> v.z;
+			obj.verts.push_back(v);
+		} else if(t == "f") {
+			Face f;
+			iss >> f.v1 >> f.v2 >> f.v3;
+			f.v1--;
+			f.v2--;
+			f.v3--;
+			obj.faces.push_back(f);
+		}
+	}
+
+	// normally i'd return the model, but globals are easy
 }
 
-void load_model(char* fp) {}
-void map_to_cube(int* img, int* cube) {}
-void deform_model(int* model, int* mouse) {}
-void rotate_model(int* model, int dimension, int deg) {
-    // rotate model in dimension by deg
-    // 3D matrix transform
+void render_obj() {
+	glViewport(0, sh/2.0, sw, -sh);
+	{
+		float ratio = (float)2.0/2.0;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(60, ratio, 1, 256);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		gluLookAt(10.0, 0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+		// glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT );
+		glPushMatrix();
+		GLUquadricObj* quadObj = gluNewQuadric ();
+		gluQuadricDrawStyle (quadObj, GLU_LINE);
+
+		glPushMatrix();
+		glRotatef(model_rot, 0.0, 0.0, 1.0);
+		glBegin(GL_POINTS);
+		for(int i = 0; i < obj.verts.size(); i++) {
+			glVertex3f(obj.verts[i].x, obj.verts[i].z, obj.verts[i].y);
+		}
+		glEnd();
+		glPopMatrix();
+
+		gluDeleteQuadric(quadObj);
+		glFlush();
+		glPopMatrix();
+	}
+	model_rot += 0.1;
+	glutPostRedisplay();
 }
 
 void free_mem() {
